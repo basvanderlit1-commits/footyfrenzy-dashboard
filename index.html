@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="nl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>FootyFrenzy Stats</title>
+<meta name="description" content="Views, abonnees en reacties van FootyFrenzy op YouTube, Instagram en Facebook.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&family=Barlow+Semi+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+/* Layout: scorebord-hero (totaal + platformverdeling) → tegels → grafieken → platforms → Shorts → formats; één kolom op telefoon */
+:root{color-scheme:dark;
+ --bg:#0B0F0C;--surface:#111813;--surface-2:#172119;--line:#223028;--fg:#EAF2EB;--muted:#84968A;
+ --acc:#39FF14;--acc-soft:rgba(57,255,20,.13);--up:#39FF14;--down:#FF5A5F;
+ --yt:#E0524F;--ig:#C95BA8;--fb:#5584E0;
+ --display:"Montserrat",system-ui,sans-serif;--body:"Barlow Semi Condensed","Arial Narrow",system-ui,sans-serif;--r:18px}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--fg);font:500 16px/1.45 var(--body);-webkit-font-smoothing:antialiased}
+a{color:inherit}
+button,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.in{max-width:1200px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h2,h3,h4{margin:0;text-wrap:balance}
+.eyebrow{font:700 12px/1 var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:22px;min-width:0}
+.note{color:var(--muted);font-size:14px;margin:10px 0 0}.err{color:var(--down);font-size:14px;margin:0}
+
+/* topbalk */
+.top{position:sticky;top:0;z-index:20;background:rgba(11,15,12,.84);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top,0px)}
+.bar{display:flex;align-items:center;gap:14px 20px;flex-wrap:wrap;padding-block:12px}
+.brand{display:flex;align-items:center;gap:10px;font:900 20px/1 var(--display);letter-spacing:-.02em;text-decoration:none}
+.brand b{color:var(--acc)}
+.chip{font:800 10px/1 var(--display);letter-spacing:.16em;padding:5px 7px;border-radius:6px;background:var(--acc-soft);color:var(--acc)}
+.live{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:14px;margin-right:auto}
+.live i{width:8px;height:8px;border-radius:50%;background:var(--acc);box-shadow:0 0 0 0 rgba(57,255,20,.6);animation:pulse 2.4s infinite}
+@keyframes pulse{70%{box-shadow:0 0 0 8px rgba(57,255,20,0)}100%{box-shadow:0 0 0 0 rgba(57,255,20,0)}}
+.seg{display:inline-flex;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:3px}
+.seg button{background:none;border:0;color:var(--muted);font:700 13px/1 var(--display);padding:9px 13px;border-radius:9px;cursor:pointer;transition:background .2s,color .2s}
+.seg button:hover{color:var(--fg)}
+.seg button[aria-pressed=true]{background:var(--acc);color:#07140A}
+.tabs{display:flex;gap:8px;overflow-x:auto;padding-block:0 12px;scrollbar-width:none}
+.tabs button{display:flex;align-items:center;gap:8px;background:none;border:1px solid var(--line);color:var(--muted);font:700 13px/1 var(--display);padding:9px 15px;border-radius:999px;cursor:pointer;white-space:nowrap;transition:border-color .2s,color .2s}
+.tabs button:hover{color:var(--fg)}
+.tabs button[aria-pressed=true]{border-color:var(--acc);color:var(--fg)}
+.tabs i,.dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none}
+
+main{display:grid;gap:28px;padding-block:26px 64px}
+.sec-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.sec-head h2{font:900 22px/1.1 var(--display);letter-spacing:-.01em}
+.sec-head small{color:var(--muted);font-size:14px}
+.tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+select{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 12px;font:700 13px var(--display);cursor:pointer}
+
+/* hero */
+.hero{position:relative;overflow:hidden;display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:28px;align-items:center;padding:34px;
+ background:radial-gradient(120% 140% at 0% 0%,rgba(57,255,20,.10),transparent 55%),var(--surface)}
+.pitch{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:.55}
+.hero>:not(.pitch){position:relative}
+.big{font:900 clamp(60px,11vw,112px)/.92 var(--display);letter-spacing:-.04em;margin:14px 0 14px;font-variant-numeric:tabular-nums}
+.legend{list-style:none;margin:18px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:10px 22px}
+.legend li{display:flex;align-items:center;gap:8px;color:var(--muted)}
+.legend b{color:var(--fg);font-weight:700;font-variant-numeric:tabular-nums}
+.donut{position:relative;width:100%;max-width:250px;aspect-ratio:1;justify-self:end}
+.donut-c{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
+.donut-c b{font:900 30px/1 var(--display)}.donut-c span{color:var(--muted);font-size:13px;margin-top:4px}
+.pill{display:inline-flex;align-items:center;gap:6px;font:800 12px/1 var(--display);padding:7px 10px;border-radius:999px}
+.pill.up{background:rgba(57,255,20,.14);color:var(--up)}.pill.down{background:rgba(255,90,95,.14);color:var(--down)}.pill.na{background:var(--surface-2);color:var(--muted)}
+
+/* tegels */
+.tiles{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+.tile{display:flex;flex-direction:column;gap:10px;transition:border-color .2s}
+.tile:hover{border-color:#2f4436}
+.num{font:900 40px/1 var(--display);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.sub{color:var(--muted);font-size:14px}
+.spark{display:block;width:100%;height:40px;margin-top:auto}
+.meter{height:6px;border-radius:6px;background:var(--surface-2);overflow:hidden;margin-top:auto}.meter span{display:block;height:100%;background:var(--acc);border-radius:6px}
+.ypp{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ring-box{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px}
+.ring{width:84px;height:84px}
+.ring-box b{font:800 15px/1.1 var(--display);font-variant-numeric:tabular-nums}.ring-box small{color:var(--muted);font-size:13px}
+
+/* grafieken */
+.grid2{display:grid;gap:14px;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr)}
+.ch{position:relative;height:270px;margin-top:16px}
+.empty-msg{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted)}
+.card h2{font:800 16px/1.2 var(--display)}.card h2 small{font:600 13px var(--body);color:var(--muted);margin-left:6px}
+
+/* platforms */
+.plats{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+.plat header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.plat h3{font:800 16px/1 var(--display)}
+.pnum{font:900 34px/1 var(--display);letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin-bottom:14px}
+.pnum span{font:600 14px var(--body);color:var(--muted);margin-left:8px;letter-spacing:0}
+.plat dl{margin:0;display:grid;gap:0}
+.plat dl div{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px solid var(--line)}
+.plat dt{color:var(--muted)}.plat dd{margin:0;font-weight:700;font-variant-numeric:tabular-nums}
+
+/* Shorts */
+.shorts{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(min(330px,100%),1fr))}
+.short{display:grid;grid-template-columns:92px minmax(0,1fr);gap:16px;padding:14px;text-decoration:none;transition:transform .2s,border-color .2s}
+.short:hover{transform:translateY(-3px);border-color:var(--acc)}
+.thumb{position:relative;aspect-ratio:9/16;border-radius:12px;overflow:hidden;background:var(--surface-2)}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.rank{position:absolute;left:6px;top:6px;font:900 12px/1 var(--display);padding:5px 7px;border-radius:7px;background:var(--acc);color:#07140A}
+.rank.flop{background:var(--down);color:#fff}
+.sbody{display:flex;flex-direction:column;gap:6px;min-width:0}
+.fchip{align-self:flex-start;font:800 10px/1 var(--display);letter-spacing:.1em;text-transform:uppercase;padding:5px 7px;border-radius:6px;color:var(--f);background:color-mix(in srgb,var(--f) 14%,transparent)}
+.short h4{font:800 15px/1.25 var(--display);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.short time{color:var(--muted);font-size:13px}
+.pv{list-style:none;padding:0;margin:4px 0 0;display:flex;gap:14px;flex-wrap:wrap}
+.pv li{display:flex;align-items:center;gap:6px;font-weight:700;font-variant-numeric:tabular-nums}
+.pct{height:5px;border-radius:5px;background:var(--surface-2);overflow:hidden;margin-top:auto}.pct span{display:block;height:100%;background:var(--acc)}
+.pct-l{color:var(--muted);font-size:12px}
+.tw{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+table{border-collapse:collapse;width:100%;font-size:15px;white-space:nowrap;font-variant-numeric:tabular-nums}
+th,td{padding:11px 14px;text-align:right;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--muted);font:700 11px/1 var(--display);letter-spacing:.08em;text-transform:uppercase}
+th[data-k]{cursor:pointer}th[data-k]:hover{color:var(--fg)}
+tr:last-child td{border-bottom:0}
+tr.top td:first-child{box-shadow:inset 3px 0 var(--up)}tr.flop td:first-child{box-shadow:inset 3px 0 var(--down)}
+td a{text-decoration:none}td a:hover{color:var(--acc)}
+
+/* formats */
+.frow{display:grid;grid-template-columns:minmax(150px,1.1fr) minmax(80px,2fr) 84px 84px 84px 170px;gap:16px;align-items:center;padding:14px 0;border-top:1px solid var(--line)}
+.frow:first-child{border-top:0;padding-top:0}
+.fname{display:flex;align-items:center;gap:10px;font:800 15px/1.2 var(--display)}
+.fname small{display:block;font:600 13px var(--body);color:var(--muted)}
+.fbar{height:10px;border-radius:10px;background:var(--surface-2);overflow:hidden}.fbar span{display:block;height:100%;border-radius:10px}
+.fnums{text-align:right}.fnums b{display:block;font:800 16px/1.1 var(--display);font-variant-numeric:tabular-nums}.fnums small{color:var(--muted);font-size:12px}
+details{margin-top:12px}
+summary{cursor:pointer;color:var(--muted);font:700 13px var(--display);padding:8px 0}
+summary:hover{color:var(--fg)}
+details .tw{margin-top:6px}
+
+footer{color:var(--muted);font-size:14px;border-top:1px solid var(--line);padding-top:20px}
+
+/* platform-tabs: alleen het gekozen platform tonen */
+[data-tab=yt] .p-ig,[data-tab=yt] .p-fb,[data-tab=ig] .p-yt,[data-tab=ig] .p-fb,[data-tab=fb] .p-yt,[data-tab=fb] .p-ig{display:none!important}
+[data-tab=ig] .grid2,[data-tab=fb] .grid2{grid-template-columns:1fr}
+
+@media (max-width:900px){.grid2{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:720px){
+ .hero{grid-template-columns:minmax(0,1fr);padding:24px}.donut{justify-self:center;max-width:210px}
+ .frow{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 12px}.fname,.fbar{grid-column:1/-1}.frow .pill{grid-column:1/-1;justify-self:start}.fnums{text-align:left}
+ .num{font-size:34px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style></head>
+<body>
+<div id="app" data-tab="all">
+<header class="top">
+ <div class="in bar">
+  <a class="brand" href="https://www.youtube.com/@footyfrenzyonly" target="_blank" rel="noopener"><span>FOOTY<b>FRENZY</b></span><span class="chip">STATS</span></a>
+  <div class="live"><i></i><span id="gen"></span></div>
+  <div class="seg" id="per" role="group" aria-label="Periode"><button data-p="7">7 dagen</button><button data-p="28">28 dagen</button><button data-p="90">90 dagen</button></div>
+ </div>
+ <nav class="in tabs" id="tabs" aria-label="Platform">
+  <button data-t="all"><i style="background:var(--acc)"></i>Alles</button>
+  <button data-t="yt"><i style="background:var(--yt)"></i>YouTube</button>
+  <button data-t="ig"><i style="background:var(--ig)"></i>Instagram</button>
+  <button data-t="fb"><i style="background:var(--fb)"></i>Facebook</button>
+ </nav>
+</header>
+
+<main class="in">
+ <section class="card hero" aria-label="Totaal">
+  <svg class="pitch" viewBox="0 0 1000 400" preserveAspectRatio="xMidYMid slice" aria-hidden="true" fill="none" stroke="rgba(57,255,20,.07)" stroke-width="2">
+   <rect x="40" y="30" width="920" height="340" rx="4"/><line x1="500" y1="30" x2="500" y2="370"/><circle cx="500" cy="200" r="70"/><circle cx="500" cy="200" r="4" fill="rgba(57,255,20,.07)"/>
+   <rect x="40" y="110" width="140" height="180"/><rect x="40" y="160" width="50" height="80"/><rect x="820" y="110" width="140" height="180"/><rect x="910" y="160" width="50" height="80"/>
+   <path d="M180 160a50 50 0 0 1 0 80M820 160a50 50 0 0 0 0 80"/>
+  </svg>
+  <div>
+   <div class="eyebrow" id="h-eye"></div>
+   <div class="big" id="h-val">0</div>
+   <div id="h-delta"></div>
+   <ul class="legend" id="h-legend"></ul>
+  </div>
+  <div class="donut"><canvas id="donut" aria-label="Verdeling views per platform"></canvas><div class="donut-c"><b id="d-val">–</b><span id="d-lab"></span></div></div>
+ </section>
+
+ <section class="tiles" id="tiles" aria-label="Kerncijfers"></section>
+
+ <section class="grid2">
+  <div class="card p-yt"><h2>Views per dag<small>YouTube</small></h2><div class="ch"><canvas id="line"></canvas></div></div>
+  <div class="card"><h2>Views per Short<small id="bars-sub"></small></h2><div class="ch"><canvas id="bars"></canvas><div class="empty-msg" id="bars-empty" hidden>Nog geen Shorts in deze periode</div></div></div>
+ </section>
+
+ <section><div class="sec-head"><h2>Platforms</h2></div><div class="plats" id="plats"></div></section>
+
+ <section>
+  <div class="sec-head"><h2>Shorts</h2>
+   <div class="tools"><label for="sort" class="sub">Sorteer</label><select id="sort"></select>
+    <div class="seg" id="view" role="group" aria-label="Weergave"><button data-v="cards">Kaarten</button><button data-v="table">Tabel</button></div></div>
+  </div>
+  <div id="shorts"></div>
+ </section>
+
+ <section class="p-yt">
+  <div class="sec-head"><h2>Formats</h2><small>YouTube · gesorteerd op views per video</small></div>
+  <div class="card" id="formats"></div>
+  <div id="groups"></div>
+ </section>
+
+ <footer id="foot"></footer>
+</main>
+</div>
+
+<script type="application/json" id="data">{"generated": "19-10-2026 23:42", "today": "2026-10-19", "yt_end": "2026-10-17", "ypp": {"subs": 2, "views90": 1062, "subs_goal": 500, "views_goal": 3000000}, "yt": {"subs": 2}, "ig": {"followers": 0, "posts": 1, "note": null, "views": 4, "likes": 0, "comments": 0}, "fb": {"followers": 0, "posts": 1, "note": null, "views": 3, "likes": 0, "comments": 0}, "periods": {"7": {"kpi": [{"label": "Views", "sub": "YouTube + nieuwe FB/IG-posts", "value": 787, "delta": 179.1, "spark": [118, 61, 100, 97, 159, 104, 141]}, {"label": "Nieuwe abonnees", "sub": "YouTube, netto", "value": 0, "delta": null, "spark": [0, 0, 0, 0, 0, 0, 0]}, {"label": "Mediaan views/Short", "sub": "YouTube, gepubliceerd in periode", "value": 95.5, "delta": 29.1}, {"label": "Reacties", "sub": "YouTube + nieuwe FB/IG-posts", "value": 1, "delta": null, "spark": [0, 0, 0, 0, 0, 0, 1]}], "chart": {"days": ["2026-10-11", "2026-10-12", "2026-10-13", "2026-10-14", "2026-10-15", "2026-10-16", "2026-10-17"], "yt": [118, 61, 100, 97, 159, 104, 141]}, "split": {"yt": 780, "ig": 4, "fb": 3}, "yt": {"views": 780, "net": 0, "likes": 1, "comments": 1, "dur": 22.975641025641025, "pct": 116.3191923076923}, "formats": {"main": {"guess-the-club": {"videos": 1, "views": 2, "dur_w": 20.0, "pct_w": 62.75999999999999, "comments": 0, "subs": 0, "views_per_video": 2.0, "avg_duration_s": 10.0, "avg_pct": 31.379999999999995, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "guess-the-player": {"videos": 7, "views": 375, "dur_w": 13744.0, "pct_w": 68569.32, "comments": 0, "subs": 0, "views_per_video": 53.57142857142857, "avg_duration_s": 36.650666666666666, "avg_pct": 182.85152000000002, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "head-to-head": {"videos": 6, "views": 371, "dur_w": 4029.0, "pct_w": 21495.61, "comments": 0, "subs": 0, "views_per_video": 61.833333333333336, "avg_duration_s": 10.859838274932615, "avg_pct": 57.939649595687335, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "matchday": {"videos": 1, "views": 32, "dur_w": 128.0, "pct_w": 601.28, "comments": 0, "subs": 0, "views_per_video": 32.0, "avg_duration_s": 4.0, "avg_pct": 18.79, "comments_per_1k": 0.0, "subs_per_1k": 0.0}}, "advice": {"guess-the-club": "te weinig data (1 video's)", "guess-the-player": "zo laten: geen duidelijk verschil", "head-to-head": "zo laten: geen duidelijk verschil", "matchday": "te weinig data (1 video's)"}, "groups": [["Per lengte (speed = 18–19 s, normal = 22–23 s)", {"guess-the-club · normal": {"videos": 1, "views": 2, "dur_w": 20.0, "pct_w": 62.75999999999999, "comments": 0, "subs": 0, "views_per_video": 2.0, "avg_duration_s": 10.0, "avg_pct": 31.379999999999995, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "guess-the-player · normal": {"videos": 4, "views": 146, "dur_w": 1756.0, "pct_w": 7624.360000000001, "comments": 0, "subs": 0, "views_per_video": 36.5, "avg_duration_s": 12.027397260273972, "avg_pct": 52.22164383561644, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "head-to-head · normal": {"videos": 3, "views": 96, "dur_w": 1104.0, "pct_w": 5182.360000000001, "comments": 0, "subs": 0, "views_per_video": 32.0, "avg_duration_s": 11.5, "avg_pct": 53.982916666666675, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "head-to-head · speed": {"videos": 3, "views": 275, "dur_w": 2925.0, "pct_w": 16313.25, "comments": 0, "subs": 0, "views_per_video": 91.66666666666667, "avg_duration_s": 10.636363636363637, "avg_pct": 59.32090909090909, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "matchday · normal": {"videos": 1, "views": 32, "dur_w": 128.0, "pct_w": 601.28, "comments": 0, "subs": 0, "views_per_video": 32.0, "avg_duration_s": 4.0, "avg_pct": 18.79, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "guess-the-player · speed": {"videos": 3, "views": 229, "dur_w": 11988.0, "pct_w": 60944.96000000001, "comments": 0, "subs": 0, "views_per_video": 76.33333333333333, "avg_duration_s": 52.34934497816594, "avg_pct": 266.13519650655024, "comments_per_1k": 0.0, "subs_per_1k": 0.0}}], ["Head-to-head per eindvraag", {"Who would you pick?": {"videos": 3, "views": 96, "dur_w": 1104.0, "pct_w": 5182.360000000001, "comments": 0, "subs": 0, "views_per_video": 32.0, "avg_duration_s": 11.5, "avg_pct": 53.982916666666675, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "Who should face the winner next?": {"videos": 2, "views": 100, "dur_w": 1000.0, "pct_w": 5374.0, "comments": 0, "subs": 0, "views_per_video": 50.0, "avg_duration_s": 10.0, "avg_pct": 53.74, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "Name a player who beats both": {"videos": 1, "views": 175, "dur_w": 1925.0, "pct_w": 10939.25, "comments": 0, "subs": 0, "views_per_video": 175.0, "avg_duration_s": 11.0, "avg_pct": 62.51, "comments_per_1k": 0.0, "subs_per_1k": 0.0}}], ["Volg-regel (test: let op abo/1k)", {"met volg-regel": {"videos": 4, "views": 380, "dur_w": 4146.0, "pct_w": 22104.66, "comments": 0, "subs": 0, "views_per_video": 95.0, "avg_duration_s": 10.910526315789474, "avg_pct": 58.17015789473684, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "zonder volg-regel": {"videos": 4, "views": 216, "dur_w": 11871.0, "pct_w": 60335.91, "comments": 0, "subs": 0, "views_per_video": 54.0, "avg_duration_s": 54.958333333333336, "avg_pct": 279.3329166666667, "comments_per_1k": 0.0, "subs_per_1k": 0.0}}], ["Actieve ster of legende", {"legende": {"videos": 3, "views": 230, "dur_w": 11998.0, "pct_w": 60940.29000000001, "comments": 0, "subs": 0, "views_per_video": 76.66666666666667, "avg_duration_s": 52.165217391304346, "avg_pct": 264.9577826086957, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "actieve ster": {"videos": 5, "views": 366, "dur_w": 4019.0, "pct_w": 21500.28, "comments": 0, "subs": 0, "views_per_video": 73.2, "avg_duration_s": 10.980874316939891, "avg_pct": 58.74393442622951, "comments_per_1k": 0.0, "subs_per_1k": 0.0}}], ["Per indeling", {"head-to-head · bars": {"videos": 2, "views": 192, "dur_w": 2104.0, "pct_w": 10556.36, "comments": 0, "subs": 0, "views_per_video": 96.0, "avg_duration_s": 10.958333333333334, "avg_pct": 54.98104166666667, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "guess-the-player · cards": {"videos": 2, "views": 112, "dur_w": 1107.0, "pct_w": 5987.72, "comments": 0, "subs": 0, "views_per_video": 56.0, "avg_duration_s": 9.883928571428571, "avg_pct": 53.46178571428572, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "head-to-head · cards": {"videos": 2, "views": 175, "dur_w": 1925.0, "pct_w": 10939.25, "comments": 0, "subs": 0, "views_per_video": 87.5, "avg_duration_s": 11.0, "avg_pct": 62.51, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "guess-the-player · spotlight": {"videos": 1, "views": 117, "dur_w": 10881.0, "pct_w": 54957.240000000005, "comments": 0, "subs": 0, "views_per_video": 117.0, "avg_duration_s": 93.0, "avg_pct": 469.72, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "guess-the-player · strip": {"videos": 1, "views": 0, "dur_w": 0.0, "pct_w": 0.0, "comments": 0, "subs": 0, "views_per_video": 0.0, "avg_duration_s": 0.0, "avg_pct": 0.0, "comments_per_1k": 0.0, "subs_per_1k": 0.0}}], ["Per titelsjabloon", {"Only real fans get this club in {n} clues": {"videos": 1, "views": 2, "dur_w": 20.0, "pct_w": 62.75999999999999, "comments": 0, "subs": 0, "views_per_video": 2.0, "avg_duration_s": 10.0, "avg_pct": 31.379999999999995, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "{n} numbers. One legend. Who is it?": {"videos": 1, "views": 72, "dur_w": 720.0, "pct_w": 3271.68, "comments": 0, "subs": 0, "views_per_video": 72.0, "avg_duration_s": 10.0, "avg_pct": 45.44, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "{a} vs {b}: who was better?": {"videos": 2, "views": 92, "dur_w": 1104.0, "pct_w": 5182.360000000001, "comments": 0, "subs": 0, "views_per_video": 46.0, "avg_duration_s": 12.0, "avg_pct": 56.330000000000005, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "Name him before the timer runs out": {"videos": 1, "views": 0, "dur_w": 0.0, "pct_w": 0.0, "comments": 0, "subs": 0, "views_per_video": 0.0, "avg_duration_s": 0.0, "avg_pct": 0.0, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "{a} or {b}? The numbers don't lie": {"videos": 2, "views": 4, "dur_w": 0.0, "pct_w": 0.0, "comments": 0, "subs": 0, "views_per_video": 2.0, "avg_duration_s": 0.0, "avg_pct": 0.0, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "Guess the player: {n} stats, zero names": {"videos": 1, "views": 74, "dur_w": 1036.0, "pct_w": 4352.68, "comments": 0, "subs": 0, "views_per_video": 74.0, "avg_duration_s": 14.0, "avg_pct": 58.82000000000001, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "Settle it: {a} or {b}?": {"videos": 1, "views": 100, "dur_w": 1000.0, "pct_w": 5374.0, "comments": 0, "subs": 0, "views_per_video": 100.0, "avg_duration_s": 10.0, "avg_pct": 53.74, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "Matchday {r}: the numbers behind the weekend": {"videos": 1, "views": 32, "dur_w": 128.0, "pct_w": 601.28, "comments": 0, "subs": 0, "views_per_video": 32.0, "avg_duration_s": 4.0, "avg_pct": 18.79, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "Can you name this {adj} {who} from {n} stats?": {"videos": 1, "views": 99, "dur_w": 990.0, "pct_w": 5378.67, "comments": 0, "subs": 0, "views_per_video": 99.0, "avg_duration_s": 10.0, "avg_pct": 54.33, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "{a} vs {b} in {n} stats": {"videos": 1, "views": 175, "dur_w": 1925.0, "pct_w": 10939.25, "comments": 0, "subs": 0, "views_per_video": 175.0, "avg_duration_s": 11.0, "avg_pct": 62.51, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "{n} numbers. One {who}. Who is it?": {"videos": 1, "views": 117, "dur_w": 10881.0, "pct_w": 54957.240000000005, "comments": 0, "subs": 0, "views_per_video": 117.0, "avg_duration_s": 93.0, "avg_pct": 469.72, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "Real fans only: which {club} player is this?": {"videos": 1, "views": 13, "dur_w": 117.0, "pct_w": 609.0500000000001, "comments": 0, "subs": 0, "views_per_video": 13.0, "avg_duration_s": 9.0, "avg_pct": 46.85000000000001, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "Can you name this {club} {who}?": {"videos": 1, "views": 0, "dur_w": 0.0, "pct_w": 0.0, "comments": 0, "subs": 0, "views_per_video": 0.0, "avg_duration_s": 0.0, "avg_pct": 0.0, "comments_per_1k": 0.0, "subs_per_1k": 0.0}}], ["Per grote club (clubframing)", {"geen grote club": {"videos": 11, "views": 733, "dur_w": 17656.0, "pct_w": 89455.88, "comments": 0, "subs": 0, "views_per_video": 66.63636363636364, "avg_duration_s": 24.08731241473397, "avg_pct": 122.04076398362893, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "Barcelona": {"videos": 1, "views": 13, "dur_w": 117.0, "pct_w": 609.0500000000001, "comments": 0, "subs": 0, "views_per_video": 13.0, "avg_duration_s": 9.0, "avg_pct": 46.85000000000001, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "Real Madrid": {"videos": 1, "views": 0, "dur_w": 0.0, "pct_w": 0.0, "comments": 0, "subs": 0, "views_per_video": 0.0, "avg_duration_s": 0.0, "avg_pct": 0.0, "comments_per_1k": 0.0, "subs_per_1k": 0.0}}]]}}, "28": {"kpi": [{"label": "Views", "sub": "YouTube + nieuwe FB/IG-posts", "value": 1069, "delta": null, "spark": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 38, 145, 10, 89, 118, 61, 100, 97, 159, 104, 141]}, {"label": "Nieuwe abonnees", "sub": "YouTube, netto", "value": 0, "delta": null, "spark": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"label": "Mediaan views/Short", "sub": "YouTube, gepubliceerd in periode", "value": 81, "delta": null}, {"label": "Reacties", "sub": "YouTube + nieuwe FB/IG-posts", "value": 1, "delta": null, "spark": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]}], "chart": {"days": ["2026-09-20", "2026-09-21", "2026-09-22", "2026-09-23", "2026-09-24", "2026-09-25", "2026-09-26", "2026-09-27", "2026-09-28", "2026-09-29", "2026-09-30", "2026-10-01", "2026-10-02", "2026-10-03", "2026-10-04", "2026-10-05", "2026-10-06", "2026-10-07", "2026-10-08", "2026-10-09", "2026-10-10", "2026-10-11", "2026-10-12", "2026-10-13", "2026-10-14", "2026-10-15", "2026-10-16", "2026-10-17"], "yt": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 38, 145, 10, 89, 118, 61, 100, 97, 159, 104, 141]}, "split": {"yt": 1062, "ig": 4, "fb": 3}, "yt": {"views": 1062, "net": 0, "likes": 4, "comments": 1, "dur": 20.235404896421844, "pct": 100.0958097928437}, "formats": {"main": {"guess-the-club": {"videos": 1, "views": 44, "dur_w": 396.0, "pct_w": 1228.48, "comments": 0, "subs": 0, "views_per_video": 44.0, "avg_duration_s": 9.0, "avg_pct": 27.92, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "guess-the-player": {"videos": 7, "views": 392, "dur_w": 13970.0, "pct_w": 69563.28000000001, "comments": 0, "subs": 0, "views_per_video": 56.0, "avg_duration_s": 35.63775510204081, "avg_pct": 177.45734693877554, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "head-to-head": {"videos": 6, "views": 594, "dur_w": 6996.0, "pct_w": 34908.71, "comments": 0, "subs": 0, "views_per_video": 99.0, "avg_duration_s": 11.777777777777779, "avg_pct": 58.76887205387205, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "matchday": {"videos": 1, "views": 32, "dur_w": 128.0, "pct_w": 601.28, "comments": 0, "subs": 0, "views_per_video": 32.0, "avg_duration_s": 4.0, "avg_pct": 18.79, "comments_per_1k": 0.0, "subs_per_1k": 0.0}}, "advice": {"guess-the-club": "te weinig data (1 video's)", "guess-the-player": "zo laten: geen duidelijk verschil", "head-to-head": "zo laten: geen duidelijk verschil", "matchday": "te weinig data (1 video's)"}, "groups": [["Per lengte (speed = 18–19 s, normal = 22–23 s)", {"guess-the-club · normal": {"videos": 1, "views": 44, "dur_w": 396.0, "pct_w": 1228.48, "comments": 0, "subs": 0, "views_per_video": 44.0, "avg_duration_s": 9.0, "avg_pct": 27.92, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "guess-the-player · normal": {"videos": 4, "views": 163, "dur_w": 1982.0, "pct_w": 8618.32, "comments": 0, "subs": 0, "views_per_video": 40.75, "avg_duration_s": 12.159509202453988, "avg_pct": 52.873128834355825, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "head-to-head · normal": {"videos": 3, "views": 319, "dur_w": 4071.0, "pct_w": 18595.46, "comments": 0, "subs": 0, "views_per_video": 106.33333333333333, "avg_duration_s": 12.761755485893417, "avg_pct": 58.29297805642633, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "head-to-head · speed": {"videos": 3, "views": 275, "dur_w": 2925.0, "pct_w": 16313.25, "comments": 0, "subs": 0, "views_per_video": 91.66666666666667, "avg_duration_s": 10.636363636363637, "avg_pct": 59.32090909090909, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "matchday · normal": {"videos": 1, "views": 32, "dur_w": 128.0, "pct_w": 601.28, "comments": 0, "subs": 0, "views_per_video": 32.0, "avg_duration_s": 4.0, "avg_pct": 18.79, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "guess-the-player · speed": {"videos": 3, "views": 229, "dur_w": 11988.0, "pct_w": 60944.96000000001, "comments": 0, "subs": 0, "views_per_video": 76.33333333333333, "avg_duration_s": 52.34934497816594, "avg_pct": 266.13519650655024, "comments_per_1k": 0.0, "subs_per_1k": 0.0}}], ["Head-to-head per eindvraag", {"Who would you pick?": {"videos": 3, "views": 319, "dur_w": 4071.0, "pct_w": 18595.46, "comments": 0, "subs": 0, "views_per_video": 106.33333333333333, "avg_duration_s": 12.761755485893417, "avg_pct": 58.29297805642633, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "Who should face the winner next?": {"videos": 2, "views": 100, "dur_w": 1000.0, "pct_w": 5374.0, "comments": 0, "subs": 0, "views_per_video": 50.0, "avg_duration_s": 10.0, "avg_pct": 53.74, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "Name a player who beats both": {"videos": 1, "views": 175, "dur_w": 1925.0, "pct_w": 10939.25, "comments": 0, "subs": 0, "views_per_video": 175.0, "avg_duration_s": 11.0, "avg_pct": 62.51, "comments_per_1k": 0.0, "subs_per_1k": 0.0}}], ["Volg-regel (test: let op abo/1k)", {"met volg-regel": {"videos": 4, "views": 380, "dur_w": 4146.0, "pct_w": 22104.66, "comments": 0, "subs": 0, "views_per_video": 95.0, "avg_duration_s": 10.910526315789474, "avg_pct": 58.17015789473684, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "zonder volg-regel": {"videos": 4, "views": 216, "dur_w": 11871.0, "pct_w": 60335.91, "comments": 0, "subs": 0, "views_per_video": 54.0, "avg_duration_s": 54.958333333333336, "avg_pct": 279.3329166666667, "comments_per_1k": 0.0, "subs_per_1k": 0.0}}], ["Actieve ster of legende", {"legende": {"videos": 3, "views": 230, "dur_w": 11998.0, "pct_w": 60940.29000000001, "comments": 0, "subs": 0, "views_per_video": 76.66666666666667, "avg_duration_s": 52.165217391304346, "avg_pct": 264.9577826086957, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "actieve ster": {"videos": 5, "views": 366, "dur_w": 4019.0, "pct_w": 21500.28, "comments": 0, "subs": 0, "views_per_video": 73.2, "avg_duration_s": 10.980874316939891, "avg_pct": 58.74393442622951, "comments_per_1k": 0.0, "subs_per_1k": 0.0}}], ["Per indeling", {"head-to-head · bars": {"videos": 2, "views": 192, "dur_w": 2104.0, "pct_w": 10556.36, "comments": 0, "subs": 0, "views_per_video": 96.0, "avg_duration_s": 10.958333333333334, "avg_pct": 54.98104166666667, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "guess-the-player · cards": {"videos": 2, "views": 112, "dur_w": 1107.0, "pct_w": 5987.72, "comments": 0, "subs": 0, "views_per_video": 56.0, "avg_duration_s": 9.883928571428571, "avg_pct": 53.46178571428572, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "head-to-head · cards": {"videos": 2, "views": 175, "dur_w": 1925.0, "pct_w": 10939.25, "comments": 0, "subs": 0, "views_per_video": 87.5, "avg_duration_s": 11.0, "avg_pct": 62.51, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "guess-the-player · spotlight": {"videos": 1, "views": 117, "dur_w": 10881.0, "pct_w": 54957.240000000005, "comments": 0, "subs": 0, "views_per_video": 117.0, "avg_duration_s": 93.0, "avg_pct": 469.72, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "guess-the-player · strip": {"videos": 1, "views": 0, "dur_w": 0.0, "pct_w": 0.0, "comments": 0, "subs": 0, "views_per_video": 0.0, "avg_duration_s": 0.0, "avg_pct": 0.0, "comments_per_1k": 0.0, "subs_per_1k": 0.0}}], ["Per titelsjabloon", {"Only real fans get this club in {n} clues": {"videos": 1, "views": 44, "dur_w": 396.0, "pct_w": 1228.48, "comments": 0, "subs": 0, "views_per_video": 44.0, "avg_duration_s": 9.0, "avg_pct": 27.92, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "{n} numbers. One legend. Who is it?": {"videos": 1, "views": 82, "dur_w": 820.0, "pct_w": 3726.08, "comments": 0, "subs": 0, "views_per_video": 82.0, "avg_duration_s": 10.0, "avg_pct": 45.44, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "{a} vs {b}: who was better?": {"videos": 2, "views": 238, "dur_w": 2856.0, "pct_w": 13213.820000000002, "comments": 0, "subs": 0, "views_per_video": 119.0, "avg_duration_s": 12.0, "avg_pct": 55.520252100840345, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "Name him before the timer runs out": {"videos": 1, "views": 7, "dur_w": 126.0, "pct_w": 539.56, "comments": 0, "subs": 0, "views_per_video": 7.0, "avg_duration_s": 18.0, "avg_pct": 77.08, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "{a} or {b}? The numbers don't lie": {"videos": 2, "views": 81, "dur_w": 1215.0, "pct_w": 5381.639999999999, "comments": 0, "subs": 0, "views_per_video": 40.5, "avg_duration_s": 15.0, "avg_pct": 66.44, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "Guess the player: {n} stats, zero names": {"videos": 1, "views": 74, "dur_w": 1036.0, "pct_w": 4352.68, "comments": 0, "subs": 0, "views_per_video": 74.0, "avg_duration_s": 14.0, "avg_pct": 58.82000000000001, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "Settle it: {a} or {b}?": {"videos": 1, "views": 100, "dur_w": 1000.0, "pct_w": 5374.0, "comments": 0, "subs": 0, "views_per_video": 100.0, "avg_duration_s": 10.0, "avg_pct": 53.74, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "Matchday {r}: the numbers behind the weekend": {"videos": 1, "views": 32, "dur_w": 128.0, "pct_w": 601.28, "comments": 0, "subs": 0, "views_per_video": 32.0, "avg_duration_s": 4.0, "avg_pct": 18.79, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "Can you name this {adj} {who} from {n} stats?": {"videos": 1, "views": 99, "dur_w": 990.0, "pct_w": 5378.67, "comments": 0, "subs": 0, "views_per_video": 99.0, "avg_duration_s": 10.0, "avg_pct": 54.33, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "{a} vs {b} in {n} stats": {"videos": 1, "views": 175, "dur_w": 1925.0, "pct_w": 10939.25, "comments": 0, "subs": 0, "views_per_video": 175.0, "avg_duration_s": 11.0, "avg_pct": 62.51, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "{n} numbers. One {who}. Who is it?": {"videos": 1, "views": 117, "dur_w": 10881.0, "pct_w": 54957.240000000005, "comments": 0, "subs": 0, "views_per_video": 117.0, "avg_duration_s": 93.0, "avg_pct": 469.72, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "Real fans only: which {club} player is this?": {"videos": 1, "views": 13, "dur_w": 117.0, "pct_w": 609.0500000000001, "comments": 0, "subs": 0, "views_per_video": 13.0, "avg_duration_s": 9.0, "avg_pct": 46.85000000000001, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "Can you name this {club} {who}?": {"videos": 1, "views": 0, "dur_w": 0.0, "pct_w": 0.0, "comments": 0, "subs": 0, "views_per_video": 0.0, "avg_duration_s": 0.0, "avg_pct": 0.0, "comments_per_1k": 0.0, "subs_per_1k": 0.0}}], ["Per grote club (clubframing)", {"geen grote club": {"videos": 11, "views": 973, "dur_w": 20849.0, "pct_w": 103862.94, "comments": 0, "subs": 0, "views_per_video": 88.45454545454545, "avg_duration_s": 21.42754367934224, "avg_pct": 106.7450565262076, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "Barcelona": {"videos": 1, "views": 13, "dur_w": 117.0, "pct_w": 609.0500000000001, "comments": 0, "subs": 0, "views_per_video": 13.0, "avg_duration_s": 9.0, "avg_pct": 46.85000000000001, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "Real Madrid": {"videos": 1, "views": 0, "dur_w": 0.0, "pct_w": 0.0, "comments": 0, "subs": 0, "views_per_video": 0.0, "avg_duration_s": 0.0, "avg_pct": 0.0, "comments_per_1k": 0.0, "subs_per_1k": 0.0}}]]}}, "90": {"kpi": [{"label": "Views", "sub": "YouTube + nieuwe FB/IG-posts", "value": 1069, "delta": null, "spark": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 38, 145, 10, 89, 118, 61, 100, 97, 159, 104, 141]}, {"label": "Nieuwe abonnees", "sub": "YouTube, netto", "value": 0, "delta": null, "spark": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]}, {"label": "Mediaan views/Short", "sub": "YouTube, gepubliceerd in periode", "value": 81, "delta": null}, {"label": "Reacties", "sub": "YouTube + nieuwe FB/IG-posts", "value": 1, "delta": null, "spark": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]}], "chart": {"days": ["2026-07-20", "2026-07-21", "2026-07-22", "2026-07-23", "2026-07-24", "2026-07-25", "2026-07-26", "2026-07-27", "2026-07-28", "2026-07-29", "2026-07-30", "2026-07-31", "2026-08-01", "2026-08-02", "2026-08-03", "2026-08-04", "2026-08-05", "2026-08-06", "2026-08-07", "2026-08-08", "2026-08-09", "2026-08-10", "2026-08-11", "2026-08-12", "2026-08-13", "2026-08-14", "2026-08-15", "2026-08-16", "2026-08-17", "2026-08-18", "2026-08-19", "2026-08-20", "2026-08-21", "2026-08-22", "2026-08-23", "2026-08-24", "2026-08-25", "2026-08-26", "2026-08-27", "2026-08-28", "2026-08-29", "2026-08-30", "2026-08-31", "2026-09-01", "2026-09-02", "2026-09-03", "2026-09-04", "2026-09-05", "2026-09-06", "2026-09-07", "2026-09-08", "2026-09-09", "2026-09-10", "2026-09-11", "2026-09-12", "2026-09-13", "2026-09-14", "2026-09-15", "2026-09-16", "2026-09-17", "2026-09-18", "2026-09-19", "2026-09-20", "2026-09-21", "2026-09-22", "2026-09-23", "2026-09-24", "2026-09-25", "2026-09-26", "2026-09-27", "2026-09-28", "2026-09-29", "2026-09-30", "2026-10-01", "2026-10-02", "2026-10-03", "2026-10-04", "2026-10-05", "2026-10-06", "2026-10-07", "2026-10-08", "2026-10-09", "2026-10-10", "2026-10-11", "2026-10-12", "2026-10-13", "2026-10-14", "2026-10-15", "2026-10-16", "2026-10-17"], "yt": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 38, 145, 10, 89, 118, 61, 100, 97, 159, 104, 141]}, "split": {"yt": 1062, "ig": 4, "fb": 3}, "yt": {"views": 1062, "net": 0, "likes": 4, "comments": 1, "dur": 20.235404896421844, "pct": 100.0958097928437}, "formats": {"main": {"guess-the-club": {"videos": 1, "views": 44, "dur_w": 396.0, "pct_w": 1228.48, "comments": 0, "subs": 0, "views_per_video": 44.0, "avg_duration_s": 9.0, "avg_pct": 27.92, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "guess-the-player": {"videos": 7, "views": 392, "dur_w": 13970.0, "pct_w": 69563.28000000001, "comments": 0, "subs": 0, "views_per_video": 56.0, "avg_duration_s": 35.63775510204081, "avg_pct": 177.45734693877554, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "head-to-head": {"videos": 6, "views": 594, "dur_w": 6996.0, "pct_w": 34908.71, "comments": 0, "subs": 0, "views_per_video": 99.0, "avg_duration_s": 11.777777777777779, "avg_pct": 58.76887205387205, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "matchday": {"videos": 1, "views": 32, "dur_w": 128.0, "pct_w": 601.28, "comments": 0, "subs": 0, "views_per_video": 32.0, "avg_duration_s": 4.0, "avg_pct": 18.79, "comments_per_1k": 0.0, "subs_per_1k": 0.0}}, "advice": {"guess-the-club": "te weinig data (1 video's)", "guess-the-player": "zo laten: geen duidelijk verschil", "head-to-head": "zo laten: geen duidelijk verschil", "matchday": "te weinig data (1 video's)"}, "groups": [["Per lengte (speed = 18–19 s, normal = 22–23 s)", {"guess-the-club · normal": {"videos": 1, "views": 44, "dur_w": 396.0, "pct_w": 1228.48, "comments": 0, "subs": 0, "views_per_video": 44.0, "avg_duration_s": 9.0, "avg_pct": 27.92, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "guess-the-player · normal": {"videos": 4, "views": 163, "dur_w": 1982.0, "pct_w": 8618.32, "comments": 0, "subs": 0, "views_per_video": 40.75, "avg_duration_s": 12.159509202453988, "avg_pct": 52.873128834355825, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "head-to-head · normal": {"videos": 3, "views": 319, "dur_w": 4071.0, "pct_w": 18595.46, "comments": 0, "subs": 0, "views_per_video": 106.33333333333333, "avg_duration_s": 12.761755485893417, "avg_pct": 58.29297805642633, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "head-to-head · speed": {"videos": 3, "views": 275, "dur_w": 2925.0, "pct_w": 16313.25, "comments": 0, "subs": 0, "views_per_video": 91.66666666666667, "avg_duration_s": 10.636363636363637, "avg_pct": 59.32090909090909, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "matchday · normal": {"videos": 1, "views": 32, "dur_w": 128.0, "pct_w": 601.28, "comments": 0, "subs": 0, "views_per_video": 32.0, "avg_duration_s": 4.0, "avg_pct": 18.79, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "guess-the-player · speed": {"videos": 3, "views": 229, "dur_w": 11988.0, "pct_w": 60944.96000000001, "comments": 0, "subs": 0, "views_per_video": 76.33333333333333, "avg_duration_s": 52.34934497816594, "avg_pct": 266.13519650655024, "comments_per_1k": 0.0, "subs_per_1k": 0.0}}], ["Head-to-head per eindvraag", {"Who would you pick?": {"videos": 3, "views": 319, "dur_w": 4071.0, "pct_w": 18595.46, "comments": 0, "subs": 0, "views_per_video": 106.33333333333333, "avg_duration_s": 12.761755485893417, "avg_pct": 58.29297805642633, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "Who should face the winner next?": {"videos": 2, "views": 100, "dur_w": 1000.0, "pct_w": 5374.0, "comments": 0, "subs": 0, "views_per_video": 50.0, "avg_duration_s": 10.0, "avg_pct": 53.74, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "Name a player who beats both": {"videos": 1, "views": 175, "dur_w": 1925.0, "pct_w": 10939.25, "comments": 0, "subs": 0, "views_per_video": 175.0, "avg_duration_s": 11.0, "avg_pct": 62.51, "comments_per_1k": 0.0, "subs_per_1k": 0.0}}], ["Volg-regel (test: let op abo/1k)", {"met volg-regel": {"videos": 4, "views": 380, "dur_w": 4146.0, "pct_w": 22104.66, "comments": 0, "subs": 0, "views_per_video": 95.0, "avg_duration_s": 10.910526315789474, "avg_pct": 58.17015789473684, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "zonder volg-regel": {"videos": 4, "views": 216, "dur_w": 11871.0, "pct_w": 60335.91, "comments": 0, "subs": 0, "views_per_video": 54.0, "avg_duration_s": 54.958333333333336, "avg_pct": 279.3329166666667, "comments_per_1k": 0.0, "subs_per_1k": 0.0}}], ["Actieve ster of legende", {"legende": {"videos": 3, "views": 230, "dur_w": 11998.0, "pct_w": 60940.29000000001, "comments": 0, "subs": 0, "views_per_video": 76.66666666666667, "avg_duration_s": 52.165217391304346, "avg_pct": 264.9577826086957, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "actieve ster": {"videos": 5, "views": 366, "dur_w": 4019.0, "pct_w": 21500.28, "comments": 0, "subs": 0, "views_per_video": 73.2, "avg_duration_s": 10.980874316939891, "avg_pct": 58.74393442622951, "comments_per_1k": 0.0, "subs_per_1k": 0.0}}], ["Per indeling", {"head-to-head · bars": {"videos": 2, "views": 192, "dur_w": 2104.0, "pct_w": 10556.36, "comments": 0, "subs": 0, "views_per_video": 96.0, "avg_duration_s": 10.958333333333334, "avg_pct": 54.98104166666667, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "guess-the-player · cards": {"videos": 2, "views": 112, "dur_w": 1107.0, "pct_w": 5987.72, "comments": 0, "subs": 0, "views_per_video": 56.0, "avg_duration_s": 9.883928571428571, "avg_pct": 53.46178571428572, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "head-to-head · cards": {"videos": 2, "views": 175, "dur_w": 1925.0, "pct_w": 10939.25, "comments": 0, "subs": 0, "views_per_video": 87.5, "avg_duration_s": 11.0, "avg_pct": 62.51, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "guess-the-player · spotlight": {"videos": 1, "views": 117, "dur_w": 10881.0, "pct_w": 54957.240000000005, "comments": 0, "subs": 0, "views_per_video": 117.0, "avg_duration_s": 93.0, "avg_pct": 469.72, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "guess-the-player · strip": {"videos": 1, "views": 0, "dur_w": 0.0, "pct_w": 0.0, "comments": 0, "subs": 0, "views_per_video": 0.0, "avg_duration_s": 0.0, "avg_pct": 0.0, "comments_per_1k": 0.0, "subs_per_1k": 0.0}}], ["Per titelsjabloon", {"Only real fans get this club in {n} clues": {"videos": 1, "views": 44, "dur_w": 396.0, "pct_w": 1228.48, "comments": 0, "subs": 0, "views_per_video": 44.0, "avg_duration_s": 9.0, "avg_pct": 27.92, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "{n} numbers. One legend. Who is it?": {"videos": 1, "views": 82, "dur_w": 820.0, "pct_w": 3726.08, "comments": 0, "subs": 0, "views_per_video": 82.0, "avg_duration_s": 10.0, "avg_pct": 45.44, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "{a} vs {b}: who was better?": {"videos": 2, "views": 238, "dur_w": 2856.0, "pct_w": 13213.820000000002, "comments": 0, "subs": 0, "views_per_video": 119.0, "avg_duration_s": 12.0, "avg_pct": 55.520252100840345, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "Name him before the timer runs out": {"videos": 1, "views": 7, "dur_w": 126.0, "pct_w": 539.56, "comments": 0, "subs": 0, "views_per_video": 7.0, "avg_duration_s": 18.0, "avg_pct": 77.08, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "{a} or {b}? The numbers don't lie": {"videos": 2, "views": 81, "dur_w": 1215.0, "pct_w": 5381.639999999999, "comments": 0, "subs": 0, "views_per_video": 40.5, "avg_duration_s": 15.0, "avg_pct": 66.44, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "Guess the player: {n} stats, zero names": {"videos": 1, "views": 74, "dur_w": 1036.0, "pct_w": 4352.68, "comments": 0, "subs": 0, "views_per_video": 74.0, "avg_duration_s": 14.0, "avg_pct": 58.82000000000001, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "Settle it: {a} or {b}?": {"videos": 1, "views": 100, "dur_w": 1000.0, "pct_w": 5374.0, "comments": 0, "subs": 0, "views_per_video": 100.0, "avg_duration_s": 10.0, "avg_pct": 53.74, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "Matchday {r}: the numbers behind the weekend": {"videos": 1, "views": 32, "dur_w": 128.0, "pct_w": 601.28, "comments": 0, "subs": 0, "views_per_video": 32.0, "avg_duration_s": 4.0, "avg_pct": 18.79, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "Can you name this {adj} {who} from {n} stats?": {"videos": 1, "views": 99, "dur_w": 990.0, "pct_w": 5378.67, "comments": 0, "subs": 0, "views_per_video": 99.0, "avg_duration_s": 10.0, "avg_pct": 54.33, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "{a} vs {b} in {n} stats": {"videos": 1, "views": 175, "dur_w": 1925.0, "pct_w": 10939.25, "comments": 0, "subs": 0, "views_per_video": 175.0, "avg_duration_s": 11.0, "avg_pct": 62.51, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "{n} numbers. One {who}. Who is it?": {"videos": 1, "views": 117, "dur_w": 10881.0, "pct_w": 54957.240000000005, "comments": 0, "subs": 0, "views_per_video": 117.0, "avg_duration_s": 93.0, "avg_pct": 469.72, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "Real fans only: which {club} player is this?": {"videos": 1, "views": 13, "dur_w": 117.0, "pct_w": 609.0500000000001, "comments": 0, "subs": 0, "views_per_video": 13.0, "avg_duration_s": 9.0, "avg_pct": 46.85000000000001, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "Can you name this {club} {who}?": {"videos": 1, "views": 0, "dur_w": 0.0, "pct_w": 0.0, "comments": 0, "subs": 0, "views_per_video": 0.0, "avg_duration_s": 0.0, "avg_pct": 0.0, "comments_per_1k": 0.0, "subs_per_1k": 0.0}}], ["Per grote club (clubframing)", {"geen grote club": {"videos": 11, "views": 973, "dur_w": 20849.0, "pct_w": 103862.94, "comments": 0, "subs": 0, "views_per_video": 88.45454545454545, "avg_duration_s": 21.42754367934224, "avg_pct": 106.7450565262076, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "Barcelona": {"videos": 1, "views": 13, "dur_w": 117.0, "pct_w": 609.0500000000001, "comments": 0, "subs": 0, "views_per_video": 13.0, "avg_duration_s": 9.0, "avg_pct": 46.85000000000001, "comments_per_1k": 0.0, "subs_per_1k": 0.0}, "Real Madrid": {"videos": 1, "views": 0, "dur_w": 0.0, "pct_w": 0.0, "comments": 0, "subs": 0, "views_per_video": 0.0, "avg_duration_s": 0.0, "avg_pct": 0.0, "comments_per_1k": 0.0, "subs_per_1k": 0.0}}]]}}}, "videos": [{"title": "Only real fans get this club in 4 clues", "format": "guess-the-club", "date": "2026-10-07", "yt": {"7": 2, "28": 44, "90": 44, "all": 44}, "yt_pct": 27.92, "yt_id": "3-kGaOKwvgw", "yt_url": "https://youtube.com/shorts/3-kGaOKwvgw", "ig": null, "fb": null}, {"title": "4 numbers. One legend. Who is it?", "format": "guess-the-player", "date": "2026-10-11", "yt": {"7": 72, "28": 82, "90": 82, "all": 82}, "yt_pct": 45.44, "yt_id": "6RyytsRxu7M", "yt_url": "https://youtube.com/shorts/6RyytsRxu7M", "ig": null, "fb": null}, {"title": "Van Basten vs Van Nistelrooy: who was better?", "format": "head-to-head", "date": "2026-10-08", "yt": {"7": 0, "28": 146, "90": 146, "all": 146}, "yt_pct": 55.010000000000005, "yt_id": "6v9EnmbFd5A", "yt_url": "https://youtube.com/shorts/6v9EnmbFd5A", "ig": null, "fb": null}, {"title": "Name him before the timer runs out", "format": "guess-the-player", "date": "2026-10-09", "yt": {"7": 0, "28": 7, "90": 7, "all": 7}, "yt_pct": 77.08, "yt_id": "JhbrWusPnBQ", "yt_url": "https://youtube.com/shorts/JhbrWusPnBQ", "ig": null, "fb": null}, {"title": "Henry or Klose? The numbers don't lie", "format": "head-to-head", "date": "2026-10-10", "yt": {"7": 4, "28": 81, "90": 81, "all": 81}, "yt_pct": 66.44, "yt_id": "u2Erve6he2M", "yt_url": "https://youtube.com/shorts/u2Erve6he2M", "ig": null, "fb": null}, {"title": "Guess the player: 4 stats, zero names", "format": "guess-the-player", "date": "2026-10-11", "yt": {"7": 74, "28": 74, "90": 74, "all": 74}, "yt_pct": 58.82000000000001, "yt_id": "lny2qsTYKZg", "yt_url": "https://youtube.com/shorts/lny2qsTYKZg", "ig": null, "fb": null}, {"title": "Settle it: Iniesta or Pirlo?", "format": "head-to-head", "date": "2026-10-13", "yt": {"7": 100, "28": 100, "90": 100, "all": 100}, "yt_pct": 53.74, "yt_id": "AKA8V_y2z3A", "yt_url": "https://youtube.com/shorts/AKA8V_y2z3A", "ig": null, "fb": null}, {"title": "Matchday 8: the numbers behind the weekend", "format": "matchday", "date": "2026-10-12", "yt": {"7": 32, "28": 32, "90": 32, "all": 32}, "yt_pct": 18.79, "yt_id": "zTMBLhmkagE", "yt_url": "https://youtube.com/shorts/zTMBLhmkagE", "ig": null, "fb": null}, {"title": "Can you name this Brazilian star from 3 stats?", "format": "guess-the-player", "date": "2026-10-14", "yt": {"7": 99, "28": 99, "90": 99, "all": 99}, "yt_pct": 54.33, "yt_id": "unfu1zNcxvw", "yt_url": "https://youtube.com/shorts/unfu1zNcxvw", "ig": null, "fb": null}, {"title": "Haaland vs Kane in 3 stats", "format": "head-to-head", "date": "2026-10-15", "yt": {"7": 175, "28": 175, "90": 175, "all": 175}, "yt_pct": 62.51, "yt_id": "Mc6MYBOUpWU", "yt_url": "https://youtube.com/shorts/Mc6MYBOUpWU", "ig": {"views": 4, "likes": 0, "comments": 0, "url": "https://www.instagram.com/reel/DesFtZ4ijpv/"}, "fb": {"views": 3, "likes": 0, "comments": 0, "url": "https://www.facebook.com/reel/1651481343265261"}}, {"title": "3 numbers. One legend. Who is it?", "format": "guess-the-player", "date": "2026-10-16", "yt": {"7": 117, "28": 117, "90": 117, "all": 117}, "yt_pct": 469.72, "yt_id": "D7Q_JbL03VQ", "yt_url": "https://youtube.com/shorts/D7Q_JbL03VQ", "ig": null, "fb": null}, {"title": "Kane vs Bellingham: who was better?", "format": "head-to-head", "date": "2026-10-17", "yt": {"7": 92, "28": 92, "90": 92, "all": 92}, "yt_pct": 56.330000000000005, "yt_id": "W8NNXewWdIY", "yt_url": "https://youtube.com/shorts/W8NNXewWdIY", "ig": null, "fb": null}, {"title": "Real fans only: which Barcelona player is this?", "format": "guess-the-player", "date": "2026-10-18", "yt": {"7": 13, "28": 13, "90": 13, "all": 13}, "yt_pct": 46.85, "yt_id": "IOZj4GcyHXI", "yt_url": "https://youtube.com/shorts/IOZj4GcyHXI", "ig": null, "fb": null}, {"title": "Can you name this Real Madrid star?", "format": "guess-the-player", "date": "2026-10-18", "yt": {"7": 0, "28": 0, "90": 0, "all": 0}, "yt_pct": null, "yt_id": "78HLz6szLuA", "yt_url": "https://youtube.com/shorts/78HLz6szLuA", "ig": null, "fb": null}, {"title": "Coman or Zidane? The numbers don't lie", "format": "head-to-head", "date": "2026-10-19", "yt": {"7": 0, "28": 0, "90": 0, "all": 0}, "yt_pct": null, "yt_id": "DZGTHY9hVPU", "yt_url": "https://youtube.com/shorts/DZGTHY9hVPU", "ig": null, "fb": null}]}</script>
+<script>
+const D=JSON.parse(document.getElementById('data').textContent);
+const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const st=(k,v)=>{try{return v===undefined?localStorage.getItem(k):localStorage.setItem(k,v)}catch(e){return null}};
+let P=st('ff_p')||'28',T=st('ff_t')||'all',VIEW=st('ff_v')||'cards',SORT=st('ff_s')||'date';
+if(!D.periods[P])P='28';
+const PL={yt:{name:'YouTube',c:'--yt'},ig:{name:'Instagram',c:'--ig'},fb:{name:'Facebook',c:'--fb'}};
+const FMT={'guess-the-player':'#39FF14','head-to-head':'#FFD60A','guess-the-club':'#2EE6D6','matchday':'#FF8A3D','matchday-day':'#FF8A3D','career-path':'#B98CFF','top-scorers':'#FF6FB5'};
+const fc=f=>FMT[f]||'#84968A';
+const nf=n=>n==null?'n.v.t.':Math.round(n).toLocaleString('nl-NL');
+const pc=n=>n==null?'n.v.t.':n.toLocaleString('nl-NL',{maximumFractionDigits:1})+'%';
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fdate=d=>d?new Date(d+'T12:00:00').toLocaleDateString('nl-NL',{day:'numeric',month:'short'}):'';
+const cutoff=()=>{const t=new Date(D.today+'T12:00:00');t.setDate(t.getDate()-P);return t.toISOString().slice(0,10)};
+const inPeriod=d=>d>cutoff()&&d<=D.today;
+const pill=d=>d==null?'<span class="pill na">geen vorige periode om mee te vergelijken</span>':`<span class="pill ${d>=0?'up':'down'}">${d>=0?'▲':'▼'} ${Math.abs(d).toLocaleString('nl-NL')}% t.o.v. vorige ${P} dagen</span>`;
+
+function countUp(el,to,fmt=nf){
+ if(to==null||RM){el.textContent=fmt(to);return}
+ cancelAnimationFrame(el._raf);const t0=performance.now(),dur=900;
+ const step=t=>{const k=Math.min(1,(t-t0)/dur);el.textContent=fmt(to*(1-Math.pow(1-k,3)));if(k<1)el._raf=requestAnimationFrame(step)};
+ el._raf=requestAnimationFrame(step)}
+
+function spark(a){
+ if(!a||a.length<2||a.every(v=>!v))return'<div class="spark"></div>';
+ const w=120,h=40,mx=Math.max(...a),mn=Math.min(0,...a),y=v=>h-2-(v-mn)/(mx-mn||1)*(h-6);
+ const line=a.map((v,i)=>(i?'L':'M')+(i/(a.length-1)*w).toFixed(1)+' '+y(v).toFixed(1)).join('');
+ return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true"><path d="${line}L${w} ${h}L0 ${h}Z" fill="var(--acc-soft)"/><path d="${line}" fill="none" stroke="var(--acc)" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>`}
+
+function ring(pct,label,sub){
+ const r=34,c=2*Math.PI*r,f=pct>0?Math.max(.02,Math.min(pct,100)/100):0;
+ return `<div class="ring-box"><svg class="ring" viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="${r}" fill="none" stroke="var(--surface-2)" stroke-width="8"/>
+ <circle cx="40" cy="40" r="${r}" fill="none" stroke="var(--acc)" stroke-width="8" stroke-linecap="round" stroke-dasharray="${(c*f).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 40 40)"/>
+ <text x="40" y="45" text-anchor="middle" fill="var(--fg)" font-family="Montserrat" font-weight="800" font-size="13">${pct==null?'–':pct<1?pct.toFixed(2).replace('.',',')+'%':Math.round(pct)+'%'}</text></svg><b>${label}</b><small>${sub}</small></div>`}
+
+/* ---------- grafieken ---------- */
+const charts={};
+function chart(id,cfg){charts[id]?.destroy();if(window.Chart)charts[id]=new Chart(document.getElementById(id),cfg)}
+function axes(stacked){return{maintainAspectRatio:false,animation:RM?false:{duration:700},interaction:{mode:'index',intersect:false},
+ plugins:{legend:{display:false},tooltip:{backgroundColor:css('--surface-2'),borderColor:css('--line'),borderWidth:1,titleFont:{family:'Montserrat',weight:'800'},padding:10}},
+ scales:{x:{stacked,grid:{display:false},border:{display:false},ticks:{color:css('--muted'),maxTicksLimit:8,maxRotation:0}},
+  y:{stacked,beginAtZero:true,grid:{color:css('--line')},border:{display:false},ticks:{color:css('--muted'),precision:0}}}}}
+if(window.Chart){Chart.defaults.font.family='"Barlow Semi Condensed",system-ui,sans-serif';Chart.defaults.font.size=13}
+
+function hero(){
+ const p=D.periods[P],s=p.split,all=s.yt+s.ig+s.fb,keys=T==='all'?['yt','ig','fb']:[T];
+ $('#h-eye').textContent=(T==='all'?'Views op alle platforms':'Views op '+PL[T].name)+' · laatste '+P+' dagen';
+ countUp($('#h-val'),T==='all'?p.kpi[0].value:s[T]);
+ $('#h-delta').innerHTML=T==='all'?pill(p.kpi[0].delta):T==='yt'?'<span class="pill na">YouTube Analytics</span>':'<span class="pill na">views van posts uit deze periode</span>';
+ $('#h-legend').innerHTML=['yt','ig','fb'].map(k=>`<li class="${T==='all'||T===k?'':'p-'+k}"><i class="dot" style="background:var(${PL[k].c})"></i>${PL[k].name}<b>${nf(s[k])}</b></li>`).join('');
+ const tot=keys.reduce((a,k)=>a+(s[k]||0),0);
+ chart('donut',{type:'doughnut',data:{labels:keys.map(k=>PL[k].name),datasets:[{data:tot?keys.map(k=>s[k]||0):[1],backgroundColor:tot?keys.map(k=>css(PL[k].c)):[css('--surface-2')],borderColor:css('--surface'),borderWidth:3,hoverOffset:6}]},
+  options:{cutout:'74%',maintainAspectRatio:false,animation:RM?false:{duration:800},plugins:{legend:{display:false},tooltip:{enabled:!!tot}}}});
+ const k=T==='all'?'yt':T;
+ $('#d-val').textContent=all?pc(100*(s[k]||0)/all):'–';
+ $('#d-lab').textContent=all?'aandeel '+PL[k].name:'nog geen views';
+}
+
+function tiles(){
+ const p=D.periods[P],k=p.kpi,y=p.yt,ypp=D.ypp;
+ const tile=(lab,val,extra,sub,bottom,cls='')=>`<article class="card tile ${cls}"><div class="eyebrow">${lab}</div><div class="num" data-v="${val??''}">${nf(val)}</div>${extra}<div class="sub">${sub}</div>${bottom}</article>`;
+ const small=d=>d==null?'':`<div>${pill(d).replace(' t.o.v. vorige '+P+' dagen','')}</div>`;
+ const sp=ypp.subs==null?null:100*ypp.subs/ypp.subs_goal,vp=ypp.views90==null?null:100*ypp.views90/ypp.views_goal;
+ $('#tiles').innerHTML=
+  tile('Nieuwe abonnees',k[1].value,small(k[1].delta),'YouTube, netto (erbij min eraf)',spark(k[1].spark),'p-yt')+
+  tile('Mediaan views per Short',k[2].value,small(k[2].delta),'Shorts gepubliceerd in deze periode','','p-yt')+
+  tile('Reacties',k[3].value,small(k[3].delta),'YouTube + Instagram/Facebook-posts',spark(k[3].spark))+
+  `<article class="card tile p-yt"><div class="eyebrow">% bekeken</div><div class="num">${pc(y.pct)}</div><div class="sub">gem. kijkduur ${y.dur==null?'n.v.t.':y.dur.toLocaleString('nl-NL',{maximumFractionDigits:1})+' s'} · boven 100% = herhaald</div><div class="meter"><span style="width:${Math.min(y.pct||0,100)}%"></span></div></article>`+
+  `<article class="card tile p-yt"><div class="eyebrow">YPP niveau 1</div><div class="ypp">${ring(sp,nf(ypp.subs)+' / '+nf(ypp.subs_goal),ypp.subs==null?'abonnees':'nog '+nf(Math.max(0,ypp.subs_goal-ypp.subs))+' abonnees')}${ring(vp,nf(ypp.views90),'van 3 mln views (90 d)')}</div></article>`;
+ $$('#tiles .num[data-v]').forEach(e=>e.dataset.v!==''&&countUp(e,+e.dataset.v));
+}
+
+function line(){
+ const c=D.periods[P].chart,ctx=document.getElementById('line').getContext('2d'),g=ctx.createLinearGradient(0,0,0,270);
+ g.addColorStop(0,'rgba(57,255,20,.30)');g.addColorStop(1,'rgba(57,255,20,0)');
+ chart('line',{type:'line',data:{labels:c.days.map(fdate),datasets:[{label:'YouTube-views',data:c.yt,borderColor:css('--acc'),backgroundColor:g,fill:true,tension:.35,pointRadius:0,pointHoverRadius:5,pointHoverBackgroundColor:css('--acc'),borderWidth:2.5}]},options:axes(false)});
+}
+
+function bars(){
+ const V=D.videos.filter(v=>inPeriod(v.date)).sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:0);
+ const keys=T==='all'?['yt','ig','fb']:[T];
+ $('#bars-sub').textContent=T==='all'||T==='yt'?'YouTube in periode, Instagram/Facebook totaal':'totaal per post';
+ $('#bars-empty').hidden=V.length>0;
+ const opts=axes(true);opts.plugins.tooltip.callbacks={title:i=>V[i[0].dataIndex]?.title||''};
+ chart('bars',{type:'bar',data:{labels:V.map(v=>fdate(v.date)),datasets:keys.map(k=>({label:PL[k].name,data:V.map(v=>k==='yt'?(v.yt?v.yt[P]:0):(v[k]?.views||0)),backgroundColor:css(PL[k].c),borderRadius:5,maxBarThickness:34}))},options:opts});
+}
+
+function plats(){
+ const y=D.periods[P].yt;
+ const card=(k,s,head,rows,foot='')=>`<article class="card plat p-${k}"><header><i class="dot" style="background:var(${PL[k].c})"></i><h3>${PL[k].name}</h3></header>`+
+  (s.error?`<p class="err">Niet bereikbaar: ${esc(s.error)}</p><p class="note">${k==='yt'?'Opnieuw inloggen: python -m scripts.google_auth':'Nieuw token: python -m scripts.meta'}</p>`
+  :`<div class="pnum">${nf(head)}<span>${k==='yt'?'abonnees':'volgers'}</span></div><dl>${rows.map(([a,b])=>`<div><dt>${a}</dt><dd>${b}</dd></div>`).join('')}</dl>${foot}`)+'</article>';
+ const meta=s=>[['Posts',nf(s.posts)],['Views (totaal)',nf(s.views)],['Likes (totaal)',nf(s.likes)],['Reacties (totaal)',nf(s.comments)]];
+ $('#plats').innerHTML=card('yt',D.yt,D.yt.subs,[['Netto nieuw ('+P+' d)',nf(y.net)],['Views',nf(y.views)],['Likes',nf(y.likes)],['Reacties',nf(y.comments)],['Gem. kijkduur',y.dur==null?'n.v.t.':y.dur.toLocaleString('nl-NL',{maximumFractionDigits:1})+' s'],['% bekeken',pc(y.pct)]],`<p class="note">t/m ${fdate(D.yt_end)} · YouTube Analytics loopt ~2 dagen achter</p>`)
+  +card('ig',D.ig,D.ig.followers,D.ig.error?[]:meta(D.ig),D.ig.note?`<p class="note">${esc(D.ig.note)}</p>`:'')
+  +card('fb',D.fb,D.fb.followers,D.fb.error?[]:meta(D.fb),D.fb.note?`<p class="note">${esc(D.fb.note)}</p>`:'');
+}
+
+const SORTS={date:['Nieuwste eerst',v=>v.date],views:['Meeste YouTube-views',v=>v.ytv??-1],pct:['Hoogste % bekeken',v=>v.yt_pct??-1],ig:['Meeste Instagram-views',v=>v.ig?.views??-1],fb:['Meeste Facebook-views',v=>v.fb?.views??-1]};
+function shorts(){
+ const V=D.videos.map(v=>({...v,ytv:v.yt?v.yt[P]:null}));
+ const ranked=V.filter(v=>v.ytv>0).sort((a,b)=>b.ytv-a.ytv),enough=ranked.length>=6,top=enough?ranked.slice(0,3):[],flop=enough?ranked.slice(-3):[];
+ const f=(SORTS[SORT]||SORTS.date)[1];V.sort((a,b)=>{const x=f(a),y=f(b);return x<y?1:x>y?-1:0});
+ const url=v=>v.yt_url||v.ig?.url||v.fb?.url||'#';
+ const pv=(v,k)=>k==='yt'?(v.yt?nf(v.ytv):'–'):(v[k]?nf(v[k].views):'–');
+ if(VIEW==='cards'){
+  $('#shorts').innerHTML='<div class="shorts">'+V.map(v=>{const t=top.indexOf(v),fl=flop.includes(v);
+   return `<a class="card short" href="${esc(url(v))}" target="_blank" rel="noopener"><div class="thumb">${v.yt_id?`<img loading="lazy" src="https://i.ytimg.com/vi/${encodeURIComponent(v.yt_id)}/hqdefault.jpg" alt="">`:''}${t>=0?`<b class="rank">#${t+1}</b>`:fl?'<b class="rank flop">flop</b>':''}</div>
+   <div class="sbody"><span class="fchip" style="--f:${fc(v.format)}">${esc(v.format)}</span><h4>${esc(v.title)}</h4><time datetime="${esc(v.date)}">${fdate(v.date)}</time>
+   <ul class="pv">${['yt','ig','fb'].map(k=>`<li class="p-${k}" title="${PL[k].name}${k==='yt'?' ('+P+' d)':' (totaal)'}"><i class="dot" style="background:var(${PL[k].c})"></i>${pv(v,k)}</li>`).join('')}</ul>
+   ${v.yt_pct!=null?`<span class="pct-l p-yt">${pc(v.yt_pct)} bekeken</span><div class="pct p-yt"><span style="width:${Math.min(v.yt_pct,100)}%"></span></div>`:''}</div></a>`}).join('')+'</div>';
+ }else{
+  const cols=[['','Short',''],['date','Gepubliceerd',''],['views','YT views '+P+' d','p-yt'],['pct','YT % bekeken','p-yt'],['ig','IG views','p-ig'],['','IG likes','p-ig'],['fb','FB views','p-fb'],['','FB likes','p-fb']];
+  $('#shorts').innerHTML='<div class="tw"><table><thead><tr>'+cols.map(([k,n,c])=>`<th class="${c}"${k?` data-k="${k}"`:''}>${n}${k===SORT?' ↓':''}</th>`).join('')+'</tr></thead><tbody>'+
+   V.map(v=>`<tr class="${top.includes(v)?'top':flop.includes(v)?'flop':''}"><td><a href="${esc(url(v))}" target="_blank" rel="noopener">${esc(v.title)}</a></td><td>${fdate(v.date)}</td>
+   <td class="p-yt">${pv(v,'yt')}</td><td class="p-yt">${v.yt_pct==null?'–':pc(v.yt_pct)}</td><td class="p-ig">${pv(v,'ig')}</td><td class="p-ig">${v.ig?nf(v.ig.likes):'–'}</td><td class="p-fb">${pv(v,'fb')}</td><td class="p-fb">${v.fb?nf(v.fb.likes):'–'}</td></tr>`).join('')+'</tbody></table></div>';
+  $$('#shorts th[data-k]').forEach(th=>th.onclick=()=>{SORT=th.dataset.k;st('ff_s',SORT);$('#sort').value=SORT;shorts()});
+ }
+}
+
+function ftable(agg){const r=Object.entries(agg).sort((a,b)=>b[1].views_per_video-a[1].views_per_video);
+ return `<div class="tw"><table><thead><tr><th>Groep</th><th>Video's</th><th>Views</th><th>Views/video</th><th>Kijkduur</th><th>% bekeken</th><th>Reacties/1k</th><th>Abo/1k</th></tr></thead><tbody>`+
+ r.map(([g,a])=>`<tr><td>${esc(g)}</td><td>${a.videos}</td><td>${nf(a.views)}</td><td>${nf(a.views_per_video)}</td><td>${a.avg_duration_s.toFixed(1)} s</td><td>${pc(a.avg_pct)}</td><td>${a.comments_per_1k.toFixed(1)}</td><td>${a.subs_per_1k.toFixed(1)}</td></tr>`).join('')+'</tbody></table></div>'}
+function formats(){
+ const f=D.periods[P].formats,rows=Object.entries(f.main).sort((a,b)=>b[1].views_per_video-a[1].views_per_video),mx=Math.max(1,...rows.map(r=>r[1].views_per_video));
+ $('#formats').innerHTML=rows.length?rows.map(([n,a])=>{const adv=f.advice[n]||'',cls=adv.startsWith('MEER')?'up':adv.startsWith('MINDER')?'down':'na';
+  return `<div class="frow"><div class="fname"><i class="dot" style="background:${fc(n)}"></i><div>${esc(n)}<small>${a.videos} video's · ${nf(a.views)} views</small></div></div>
+  <div class="fbar"><span style="width:${(100*a.views_per_video/mx).toFixed(1)}%;background:${fc(n)}"></span></div>
+  <div class="fnums"><b>${nf(a.views_per_video)}</b><small>views/video</small></div><div class="fnums"><b>${pc(a.avg_pct)}</b><small>bekeken</small></div><div class="fnums"><b>${a.subs_per_1k.toFixed(1)}</b><small>abo per 1k</small></div>
+  <span class="pill ${cls}" title="${esc(adv)}">${esc(adv.split(':')[0]||'–')}</span></div>`}).join(''):'<p class="note">Nog geen YouTube-data in deze periode.</p>';
+ $('#groups').innerHTML=f.groups.map(([h,a])=>`<details><summary>${esc(h)}</summary>${ftable(a)}</details>`).join('');
+}
+
+function render(){
+ $('#app').dataset.tab=T;
+ $$('#per button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.p===P));
+ $$('#tabs button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===T));
+ $$('#view button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===VIEW));
+ hero();tiles();line();bars();plats();shorts();formats();
+}
+$('#per').onclick=e=>{const b=e.target.closest('button');if(b){P=b.dataset.p;st('ff_p',P);render()}};
+$('#tabs').onclick=e=>{const b=e.target.closest('button');if(b){T=b.dataset.t;st('ff_t',T);render()}};
+$('#view').onclick=e=>{const b=e.target.closest('button');if(b){VIEW=b.dataset.v;st('ff_v',VIEW);render()}};
+$('#sort').innerHTML=Object.entries(SORTS).map(([k,[n]])=>`<option value="${k}">${n}</option>`).join('');
+if(!SORTS[SORT])SORT='date';$('#sort').value=SORT;
+$('#sort').onchange=e=>{SORT=e.target.value;st('ff_s',SORT);shorts()};
+$('#gen').textContent='Bijgewerkt '+D.generated;
+$('#foot').innerHTML=`Bronnen: YouTube Analytics API, Instagram Graph API en Facebook Graph API. YouTube-cijfers t/m ${fdate(D.yt_end)}; Instagram/Facebook-views zijn totalen per post. Automatisch bijgewerkt door de FootyFrenzy-autopilot.`;
+render();
+</script>
+</body></html>
